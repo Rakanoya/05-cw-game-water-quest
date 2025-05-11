@@ -41,23 +41,35 @@ function spawnWaterCan() {
   if (!gameActive) return; // Stop if the game is not active
   const cells = document.querySelectorAll('.grid-cell');
   
-  // Clear all cells before spawning a new water can
+  // Clear all cells before spawning a new water can or obstacle
   cells.forEach(cell => (cell.innerHTML = ''));
 
-  // Select a random cell from the grid to place the water can
-  const randomCell = cells[Math.floor(Math.random() * cells.length)];
+  // Decide randomly if we spawn a rock obstacle (20% chance)
+  const spawnRock = Math.random() < 0.2;
+  let randomCell = cells[Math.floor(Math.random() * cells.length)];
 
-  // Use a template literal to create the wrapper and water-can element
-  randomCell.innerHTML = `
-    <div class="water-can-wrapper">
-      <div class="water-can"></div>
-    </div>
-  `;
-
-  // Add click handler for the water can
-  const can = randomCell.querySelector('.water-can');
-  if (can) {
-    can.addEventListener('click', handleCanClick, { once: true });
+  if (spawnRock) {
+    // Spawn rock obstacle
+    randomCell.innerHTML = `
+      <div class="rock-obstacle-wrapper">
+        <div class="rock-obstacle"></div>
+      </div>
+    `;
+    const rock = randomCell.querySelector('.rock-obstacle');
+    if (rock) {
+      rock.addEventListener('click', handleRockClick, { once: true });
+    }
+  } else {
+    // Spawn water can
+    randomCell.innerHTML = `
+      <div class="water-can-wrapper">
+        <div class="water-can"></div>
+      </div>
+    `;
+    const can = randomCell.querySelector('.water-can');
+    if (can) {
+      can.addEventListener('click', handleCanClick, { once: true });
+    }
   }
 }
 
@@ -67,6 +79,15 @@ function handleCanClick(e) {
   currentCans++;
   updateScore();
   // Remove the can immediately after click
+  e.target.parentElement.innerHTML = '';
+}
+
+// Handle clicking a rock obstacle
+function handleRockClick(e) {
+  if (!gameActive) return;
+  if (currentCans > 0) currentCans--;
+  updateScore();
+  // Remove the rock immediately after click
   e.target.parentElement.innerHTML = '';
 }
 
@@ -119,7 +140,97 @@ function endGame() {
   msg = msgArr[Math.floor(Math.random() * msgArr.length)];
   achievements.textContent = msg;
   achievements.className = 'achievement ' + (currentCans >= 20 ? 'win' : 'lose');
+
+  // Confetti effect if player wins
+  if (currentCans >= 20) {
+    launchConfetti();
+  }
+}
+
+function resetGame() {
+  gameActive = false;
+  clearInterval(spawnInterval);
+  clearInterval(timerInterval);
+  currentCans = 0;
+  timeLeft = 30;
+  updateScore();
+  updateTimer();
+  document.getElementById('achievements').textContent = '';
+  document.getElementById('achievements').className = 'achievement';
+  createGrid();
+}
+
+// Simple confetti effect (canvas-based, no dependencies)
+function launchConfetti() {
+  // Prevent multiple canvases
+  if (document.getElementById('confetti-canvas')) return;
+
+  const colors = ['#FFC907', '#2E9DF7', '#8BD1CB', '#4FCB53', '#FF902A', '#F5402C', '#159A48', '#F16061'];
+  const canvas = document.createElement('canvas');
+  canvas.id = 'confetti-canvas';
+  canvas.style.position = 'fixed';
+  canvas.style.left = 0;
+  canvas.style.top = 0;
+  canvas.style.pointerEvents = 'none';
+  canvas.style.width = '100vw';
+  canvas.style.height = '100vh';
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  document.body.appendChild(canvas);
+
+  const ctx = canvas.getContext('2d');
+  const confettiCount = 120;
+  const confetti = [];
+
+  for (let i = 0; i < confettiCount; i++) {
+    confetti.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * -canvas.height,
+      r: 6 + Math.random() * 8,
+      d: 2 + Math.random() * 2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      tilt: Math.random() * 10 - 10,
+      tiltAngle: 0,
+      tiltAngleIncremental: (Math.random() * 0.07) + 0.05
+    });
+  }
+
+  let frame = 0;
+  function drawConfetti() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    confetti.forEach(c => {
+      ctx.beginPath();
+      ctx.lineWidth = c.r;
+      ctx.strokeStyle = c.color;
+      ctx.moveTo(c.x + c.tilt + c.r / 3, c.y);
+      ctx.lineTo(c.x + c.tilt, c.y + c.tilt + c.r);
+      ctx.stroke();
+    });
+    updateConfetti();
+    frame++;
+    if (frame < 120) {
+      requestAnimationFrame(drawConfetti);
+    } else {
+      document.body.removeChild(canvas);
+    }
+  }
+
+  function updateConfetti() {
+    confetti.forEach(c => {
+      c.y += c.d;
+      c.x += Math.sin(frame / 10) * 2;
+      c.tiltAngle += c.tiltAngleIncremental;
+      c.tilt = Math.sin(c.tiltAngle) * 15;
+      if (c.y > canvas.height) {
+        c.y = -10;
+        c.x = Math.random() * canvas.width;
+      }
+    });
+  }
+
+  drawConfetti();
 }
 
 // Set up click handler for the start button
 document.getElementById('start-game').addEventListener('click', startGame);
+document.getElementById('reset-game').addEventListener('click', resetGame);
