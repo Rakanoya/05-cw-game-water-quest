@@ -151,8 +151,8 @@ function resetGame() {
   gameActive = false;
   clearInterval(spawnInterval);
   clearInterval(timerInterval);
-  currentCans = 0;
-  timeLeft = 30;
+  currentCans = 0;      // Reset cans collected to zero
+  timeLeft = 30;        // Reset timer to 30 seconds
   updateScore();
   updateTimer();
   document.getElementById('achievements').textContent = '';
