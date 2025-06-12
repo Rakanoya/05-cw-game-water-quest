@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width">
   <title>Water Quest</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
+  <!-- Add Montserrat font for on-brand look -->
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700,900&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="container">
@@ -19,9 +21,24 @@
     </div>
     <div id="achievements" class="achievement"></div>
     <div class="game-grid"></div>
+    <div class="difficulty-select">
+      <label for="difficulty">Difficulty:</label>
+      <select id="difficulty">
+        <option value="easy">Easy</option>
+        <option value="normal" selected>Normal</option>
+        <option value="hard">Hard</option>
+      </select>
+    </div>
     <button id="start-game">Start Game</button>
     <button id="reset-game">Reset</button>
   </div>
+  <footer class="footer">
+    <div>
+      <a href="https://www.charitywater.org/" target="_blank" rel="noopener" class="footer-link">charity: water website</a>
+      &nbsp;|&nbsp;
+      <a href="https://www.charitywater.org/donate" target="_blank" rel="noopener" class="footer-link">Donate</a>
+    </div>
+  </footer>
   <script src="script.js"></script>
 </body>
 </html>
