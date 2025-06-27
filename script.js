@@ -43,8 +43,13 @@ const MILESTONES = [
 let shownMilestones = new Set();
 let milestoneTimeout = null;
 
+// Keyboard navigation state
+let currentGridPosition = 0; // Current focused grid cell (0-8)
+let keyboardNavigationActive = false;
+
 // Sound effects
 const winSound = new Audio('img/win.mp3');
+
 const itemSound = new Audio('img/collect.mp3'); // Use collect.mp3 for collecting cans
 const wrongSound = new Audio('img/wrong.mp3');
 const buttonSound = new Audio('img/button.mp3');
@@ -55,8 +60,22 @@ function createGrid() {
   grid.innerHTML = ''; // Clear any existing grid cells
   for (let i = 0; i < 9; i++) {
     const cell = document.createElement('div');
-    cell.className = 'grid-cell'; // Each cell represents a grid square
+    cell.className = 'grid-cell';
+    cell.tabIndex = 0; // Make cell focusable for keyboard navigation
+    cell.setAttribute('role', 'gridcell');
+    cell.setAttribute('aria-label', `Grid cell ${i + 1} of 9`);
+    cell.setAttribute('aria-describedby', 'grid-instructions');
+    cell.setAttribute('data-cell-index', i);
     grid.appendChild(cell);
+  }
+  
+  // Add hidden instructions for screen readers
+  if (!document.getElementById('grid-instructions')) {
+    const instructions = document.createElement('div');
+    instructions.id = 'grid-instructions';
+    instructions.className = 'sr-only';
+    instructions.textContent = 'Use arrow keys to navigate grid, space or enter to collect water cans or hit rocks';
+    document.body.appendChild(instructions);
   }
 }
 
@@ -77,30 +96,58 @@ function setDifficultySettings() {
 function spawnWaterCan() {
   if (!gameActive) return;
   const cells = document.querySelectorAll('.grid-cell');
-  cells.forEach(cell => (cell.innerHTML = ''));
+  cells.forEach(cell => {
+    cell.innerHTML = '';
+    const index = cell.getAttribute('data-cell-index');
+    cell.setAttribute('aria-label', `Grid cell ${parseInt(index) + 1} of 9, empty`);
+  });
 
   const spawnRock = Math.random() < 0.2;
   let randomCell = cells[Math.floor(Math.random() * cells.length)];
+  const cellIndex = randomCell.getAttribute('data-cell-index');
+  const cellPosition = parseInt(cellIndex) + 1;
 
   if (spawnRock) {
     randomCell.innerHTML = `
       <div class="rock-obstacle-wrapper">
-        <div class="rock-obstacle"></div>
+        <div class="rock-obstacle" tabindex="0" role="button" aria-label="Rock obstacle in cell ${cellPosition}, click to lose a can"></div>
       </div>
     `;
+    randomCell.setAttribute('aria-label', `Grid cell ${cellPosition} of 9, contains rock obstacle`);
     const rock = randomCell.querySelector('.rock-obstacle');
     if (rock) {
       rock.addEventListener('click', handleRockClick, { once: true });
+      rock.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleRockClick({ target: rock });
+        }
+      }, { once: true });
+      // Only focus if keyboard navigation is active
+      if (keyboardNavigationActive && parseInt(cellIndex) === currentGridPosition) {
+        rock.focus();
+      }
     }
   } else {
     randomCell.innerHTML = `
       <div class="water-can-wrapper">
-        <div class="water-can"></div>
+        <div class="water-can" tabindex="0" role="button" aria-label="Water can in cell ${cellPosition}, click to collect"></div>
       </div>
     `;
+    randomCell.setAttribute('aria-label', `Grid cell ${cellPosition} of 9, contains water can`);
     const can = randomCell.querySelector('.water-can');
     if (can) {
       can.addEventListener('click', handleCanClick, { once: true });
+      can.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          handleCanClick({ target: can });
+        }
+      }, { once: true });
+      // Only focus if keyboard navigation is active
+      if (keyboardNavigationActive && parseInt(cellIndex) === currentGridPosition) {
+        can.focus();
+      }
     }
   }
 }
@@ -111,6 +158,8 @@ function handleCanClick(e) {
   currentCans++;
   updateScore();
   checkMilestones();
+  // Announce to screen reader
+  announceToScreenReader(`Water can collected! ${currentCans} of ${currentGoal} cans collected.`);
   // Play item sound
   try { itemSound.currentTime = 0; itemSound.play(); } catch {}
   // Remove the can immediately after click
@@ -124,6 +173,8 @@ function handleRockClick(e) {
   if (!gameActive) return;
   if (currentCans > 0) currentCans--;
   updateScore();
+  // Announce to screen reader
+  announceToScreenReader(`Rock hit! Lost a can. ${currentCans} of ${currentGoal} cans remaining.`);
   // Play wrong sound
   try { wrongSound.currentTime = 0; wrongSound.play(); } catch {}
   // Remove the rock immediately after click
@@ -158,10 +209,20 @@ function startGame() {
   clearInterval(spawnInterval);
   document.getElementById('achievements').textContent = '';
   createGrid();
+  initializeKeyboardNavigation();
+  announceToScreenReader(`Game started! Collect ${currentGoal} water cans in ${currentTimeLimit} seconds. Use arrow keys to navigate and space to collect.`);
   spawnInterval = setInterval(spawnWaterCan, currentSpawnRate);
   timerInterval = setInterval(() => {
     timeLeft--;
     updateTimer();
+    
+    // Announce time warnings for accessibility
+    if (timeLeft === 10) {
+      announceToScreenReader('10 seconds remaining!');
+    } else if (timeLeft === 5) {
+      announceToScreenReader('5 seconds left!');
+    }
+    
     if (timeLeft <= 0) {
       endGame();
     }
@@ -172,6 +233,7 @@ function endGame() {
   gameActive = false;
   clearInterval(spawnInterval);
   clearInterval(timerInterval);
+  clearKeyboardNavigation();
   document.querySelectorAll('.grid-cell').forEach(cell => cell.innerHTML = '');
   const achievements = document.getElementById('achievements');
   let msgArr, msg;
@@ -195,6 +257,7 @@ function resetGame() {
   gameActive = false;
   clearInterval(spawnInterval);
   clearInterval(timerInterval);
+  clearKeyboardNavigation();
   currentCans = 0;
   timeLeft = currentTimeLimit;
   shownMilestones = new Set(); // Reset milestone tracking
@@ -308,7 +371,152 @@ function checkMilestones() {
   }
 }
 
+// Screen reader announcement helper
+function announceToScreenReader(message) {
+  const announcement = document.createElement('div');
+  announcement.setAttribute('aria-live', 'assertive');
+  announcement.setAttribute('aria-atomic', 'true');
+  announcement.className = 'sr-only';
+  announcement.textContent = message;
+  document.body.appendChild(announcement);
+  
+  // Remove the announcement after a brief delay
+  setTimeout(() => {
+    if (announcement.parentNode) {
+      announcement.parentNode.removeChild(announcement);
+    }
+  }, 1000);
+}
+
+// Keyboard navigation helper functions
+function moveGridFocus(direction) {
+  if (!gameActive) return;
+  
+  const cells = document.querySelectorAll('.grid-cell');
+  if (cells.length === 0) return;
+  
+  // Remove previous focus highlight
+  cells[currentGridPosition].classList.remove('keyboard-focus');
+  
+  switch (direction) {
+    case 'up':
+      if (currentGridPosition >= 3) currentGridPosition -= 3;
+      break;
+    case 'down':
+      if (currentGridPosition < 6) currentGridPosition += 3;
+      break;
+    case 'left':
+      if (currentGridPosition % 3 !== 0) currentGridPosition -= 1;
+      break;
+    case 'right':
+      if (currentGridPosition % 3 !== 2) currentGridPosition += 1;
+      break;
+  }
+  
+  // Add focus highlight and focus the cell
+  cells[currentGridPosition].classList.add('keyboard-focus');
+  cells[currentGridPosition].focus();
+  keyboardNavigationActive = true;
+}
+
+function activateCurrentGridCell() {
+  if (!gameActive || !keyboardNavigationActive) return;
+  
+  const cells = document.querySelectorAll('.grid-cell');
+  const currentCell = cells[currentGridPosition];
+  const waterCan = currentCell.querySelector('.water-can');
+  const rock = currentCell.querySelector('.rock-obstacle');
+  
+  if (waterCan) {
+    handleCanClick({ target: waterCan });
+  } else if (rock) {
+    handleRockClick({ target: rock });
+  }
+}
+
+function initializeKeyboardNavigation() {
+  const cells = document.querySelectorAll('.grid-cell');
+  if (cells.length > 0) {
+    currentGridPosition = 0;
+    cells[currentGridPosition].classList.add('keyboard-focus');
+    keyboardNavigationActive = true;
+  }
+}
+
+function clearKeyboardNavigation() {
+  const cells = document.querySelectorAll('.grid-cell');
+  cells.forEach(cell => cell.classList.remove('keyboard-focus'));
+  keyboardNavigationActive = false;
+}
+
 // Set up click handler for the start button
 document.getElementById('start-game').addEventListener('click', startGame);
 document.getElementById('reset-game').addEventListener('click', resetGame);
 document.getElementById('difficulty').addEventListener('change', resetGame);
+
+// Accessibility: allow keyboard shortcuts for game controls
+document.addEventListener('keydown', function(e) {
+  // Prevent default for game controls to avoid page scrolling
+  if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' ', 'Enter'].includes(e.key)) {
+    if (gameActive || (!gameActive && (e.key === ' ' || e.key === 'Enter'))) {
+      e.preventDefault();
+    }
+  }
+  
+  // Arrow key navigation during gameplay
+  if (gameActive) {
+    switch (e.key) {
+      case 'ArrowUp':
+        moveGridFocus('up');
+        break;
+      case 'ArrowDown':
+        moveGridFocus('down');
+        break;
+      case 'ArrowLeft':
+        moveGridFocus('left');
+        break;
+      case 'ArrowRight':
+        moveGridFocus('right');
+        break;
+      case ' ':
+      case 'Enter':
+        activateCurrentGridCell();
+        break;
+      case 'r':
+      case 'R':
+        resetGame();
+        break;
+      case 'Escape':
+        // Focus the reset button for easy access
+        document.getElementById('reset-game').focus();
+        break;
+    }
+    return;
+  }
+  
+  // Controls when game is not active
+  if (!gameActive) {
+    // Space or Enter starts game
+    if (e.key === ' ' || e.key === 'Enter') {
+      const activeElement = document.activeElement;
+      const startBtn = document.getElementById('start-game');
+      const resetBtn = document.getElementById('reset-game');
+      
+      if (activeElement === startBtn || activeElement === document.body) {
+        startGame();
+      } else if (activeElement === resetBtn) {
+        resetGame();
+      }
+    }
+    
+    // S key to focus start button
+    if (e.key === 's' || e.key === 'S') {
+      document.getElementById('start-game').focus();
+    }
+    
+    // D key to focus difficulty selector
+    if (e.key === 'd' || e.key === 'D') {
+      document.getElementById('difficulty').focus();
+    }
+  }
+});

@@ -15,12 +15,18 @@
       Water Quest
     </h1>
     <p class="game-instructions">Collect 20 cans in 30 seconds to complete the game!</p>
-    <div class="stats">
-      <p>Cans Collected: <span id="current-cans">0</span></p>
-      <p>Time Left: <span id="timer">30</span>s</p>
+    
+    <!-- Keyboard instructions for accessibility -->
+    <div class="keyboard-instructions" aria-label="Keyboard controls">
+      <p><strong>Keyboard Controls:</strong> Arrow keys to navigate, Space/Enter to collect items, R to reset, S to start, D for difficulty</p>
     </div>
-    <div id="achievements" class="achievement"></div>
-    <div class="game-grid"></div>
+    
+    <div class="stats">
+      <p>Cans Collected: <span id="current-cans" aria-live="polite">0</span></p>
+      <p>Time Left: <span id="timer" aria-live="polite">30</span>s</p>
+    </div>
+    <div id="achievements" class="achievement" aria-live="assertive" aria-atomic="true"></div>
+    <div class="game-grid" role="grid" aria-label="Water collection game grid" tabindex="-1"></div>
     <div class="difficulty-select">
       <label for="difficulty">Difficulty:</label>
       <select id="difficulty">
