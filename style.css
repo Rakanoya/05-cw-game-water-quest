@@ -12,9 +12,13 @@ Secondary Colors:
 - Dark Green: #159A48
 - Pink:       #F16061
 
-Fonts:
-- Proxima Nova
-- Avenir
+Brand Fonts (in order of preference):
+- Proxima Nova (primary brand font)
+- Avenir (secondary brand font) 
+- Montserrat (web fallback - loaded from Google Fonts)
+
+Note: Proxima Nova and Avenir are premium fonts. Montserrat serves as 
+the primary web-safe fallback that closely matches the brand aesthetic.
 
 */
 
@@ -23,7 +27,7 @@ Fonts:
 }
 
 body {
-  font-family: 'Montserrat', 'Avenir', 'Proxima Nova', Arial, sans-serif;
+  font-family: 'Proxima Nova', 'Avenir', 'Montserrat', Arial, sans-serif;
   margin: 0;
   padding: 0;
   background-color: #FFFBEA;
@@ -45,7 +49,7 @@ body {
 }
 
 h1 {
-  font-family: 'Montserrat', 'Avenir', 'Proxima Nova', Arial, sans-serif;
+  font-family: 'Proxima Nova', 'Avenir', 'Montserrat', Arial, sans-serif;
   font-size: 2.2rem;
   font-weight: 900;
   margin-bottom: 18px;
@@ -275,7 +279,7 @@ button {
   margin: 28px auto 0;
   transition: background-color 0.2s, color 0.2s, box-shadow 0.2s;
   box-shadow: 0 2px 8px #FFC90733;
-  font-family: 'Montserrat', 'Avenir', 'Proxima Nova', Arial, sans-serif;
+  font-family: 'Proxima Nova', 'Avenir', 'Montserrat', Arial, sans-serif;
   font-weight: 700;
   letter-spacing: 0.5px;
 }
@@ -333,7 +337,7 @@ button:hover {
   padding: 18px 0 12px 0;
   background: #FFFBEA;
   border-top: 2px solid #FFC907;
-  font-family: 'Montserrat', 'Avenir', 'Proxima Nova', Arial, sans-serif;
+  font-family: 'Proxima Nova', 'Avenir', 'Montserrat', Arial, sans-serif;
   font-size: 1rem;
   color: #2E9DF7;
   letter-spacing: 0.2px;

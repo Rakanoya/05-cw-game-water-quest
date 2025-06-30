@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width">
   <title>Water Quest</title>
   <link href="style.css" rel="stylesheet" type="text/css" />
-  <!-- Add Montserrat font for on-brand look -->
-  <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700,900&display=swap" rel="stylesheet">
+  <!-- Load Montserrat font as fallback for charity: water brand fonts (Proxima Nova, Avenir) -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;900&display=swap" rel="stylesheet">
 </head>
 <body>
   <div class="container">
@@ -29,14 +29,17 @@
     <div class="game-grid" role="grid" aria-label="Water collection game grid" tabindex="-1"></div>
     <div class="difficulty-select">
       <label for="difficulty">Difficulty:</label>
-      <select id="difficulty">
-        <option value="easy">Easy</option>
-        <option value="normal" selected>Normal</option>
-        <option value="hard">Hard</option>
+      <select id="difficulty" aria-describedby="difficulty-help">
+        <option value="easy">Easy (12 cans, 40s)</option>
+        <option value="normal" selected>Normal (20 cans, 30s)</option>
+        <option value="hard">Hard (28 cans, 20s)</option>
       </select>
+      <div id="difficulty-help" class="sr-only">Select game difficulty level. Changes goal and time limit.</div>
     </div>
-    <button id="start-game">Start Game</button>
-    <button id="reset-game">Reset</button>
+    <button id="start-game" aria-describedby="start-help">Start Game</button>
+    <div id="start-help" class="sr-only">Press to begin the water collection game. Use S key as shortcut.</div>
+    <button id="reset-game" aria-describedby="reset-help">Reset</button>
+    <div id="reset-help" class="sr-only">Press to reset the game. Use R key as shortcut during gameplay.</div>
   </div>
   <footer class="footer">
     <div>
